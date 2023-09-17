@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Drop shadow -->
+    <item android:right="1dp" android:left="1dp" android:top="1dp" android:bottom="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#D1D4D71C" /> <!-- Shadow color and opacity -->
+            <corners android:radius="100dp" /> <!-- Match the corner radius of the background shape -->
+        </shape>
+    </item>
+    <!-- Background shape -->
+<item>
+    <shape android:shape="rectangle">
+        <!-- Fill color for the shape -->
+        <solid android:color="#FFFFFF" />
+        <!-- Border attributes -->
+        <stroke android:width="1.2dp" android:color="#F6F6FA"/>
+        <corners android:radius="100dp" /> <!-- Adjust as needed -->
+    </shape>
+</item>
+
+</layer-list>
