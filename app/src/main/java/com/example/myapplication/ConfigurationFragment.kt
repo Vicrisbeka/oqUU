@@ -162,3 +162,10 @@ enum class Configuration {
 object Configs {
     val conf = mutableMapOf<Configuration, String>()
 }
+
+enum class RemoteConfiguration {
+    OPEN_AI, SPEECH_AI
+}
+object RemoteConfigs {
+    val conf = mutableMapOf<RemoteConfiguration, String>()
+}
