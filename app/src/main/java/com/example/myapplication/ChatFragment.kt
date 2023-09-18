@@ -21,6 +21,8 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -44,8 +46,10 @@ private const val ARG_PARAM2 = "param2"
  * create an instance of this fragment.
  */
 class ChatFragment : Fragment() {
+    private lateinit var chatAdapter: ChatAdapter
     var progressBar: ProgressBar? = null
-    var editText: EditText? = null
+    var recyclerView: RecyclerView? = null
+    //var editText: EditText? = null
     var startListeningButton: ImageButton? = null
     var isRecording: Boolean = false
     private var param1: String? = null
@@ -60,6 +64,7 @@ class ChatFragment : Fragment() {
     private val maxRecordingTimeMillis = 30_000 // 30 seconds
 
     //Chat context
+    private val recyclerViewMessages = mutableListOf<Message>()
     val messageList: MutableList<Message> = mutableListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,9 +86,21 @@ class ChatFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_chat, container, false)
-        editText = view?.findViewById(R.id.edit_text)
+        recyclerView = view?.findViewById(R.id.chatRecyclerView)
+        //editText = view?.findViewById(R.id.edit_text)
         startListeningButton = view?.findViewById(R.id.listen_button)
         progressBar = view?.findViewById(R.id.chat_loader)
+
+        chatAdapter = ChatAdapter(recyclerViewMessages)
+        recyclerView?.adapter = chatAdapter
+
+        // Set a layout manager (e.g., LinearLayoutManager)
+        val layoutManager = LinearLayoutManager(context)
+        recyclerView?.layoutManager = layoutManager
+
+        // Notify the adapter that data has changed
+        chatAdapter.notifyDataSetChanged()
+
         setupViews()
         setupConversation()
         return view
@@ -99,7 +116,7 @@ class ChatFragment : Fragment() {
                 "My english level is at $level.\n" +
                 "I'm improving english for $goal.\n" +
                 "So, please ask me something to start small talk."
-        sendRequestToOpenAI(startMessage)
+        sendRequestToOpenAI(startMessage, true)
     }
 
     fun setupViews() {
@@ -147,7 +164,7 @@ class ChatFragment : Fragment() {
 
     fun speak() {
         val apiService = RetrofitClient.speechInstance.create(SpeechService::class.java)
-        val textToConvert = editText?.text.toString()
+        val textToConvert = messageList.last().content
         val modelId = "eleven_monolingual_v1"
         val optimizeStreamingLatency = 0
         val outputFormat = "mp3_44100_128"
@@ -206,9 +223,12 @@ class ChatFragment : Fragment() {
         })
     }
 
-    fun sendRequestToOpenAI(text: String) {
+    fun sendRequestToOpenAI(text: String, initialRequest: Boolean = false) {
         progressBar?.visibility = View.VISIBLE
         messageList.add(Message("user", text))
+        if (!initialRequest) {
+            sendMessage(text)
+        }
         Log.d("OPEN AI REQUEST", "Start")
         val apiService = RetrofitClient.instance.create(OpenAIService::class.java)
         val request = ChatCompletionRequest(
@@ -233,7 +253,8 @@ class ChatFragment : Fragment() {
                     val chatCompletionResponse = response.body()
                     chatCompletionResponse?.choices?.first()?.let {
                         messageList.add(it.message)
-                        editText?.setText(it.message.content)
+                        receiveMessage(it.message.content)
+                        //editText?.setText(it.message.content)
                         speak()
                     }
                 } else {
@@ -311,7 +332,7 @@ class ChatFragment : Fragment() {
                 isRecording = false
                 if (response.isSuccessful) {
                     response.body()?.text?.let {
-                        editText?.setText(it)
+                        //editText?.setText(it)
                         sendRequestToOpenAI(it)
                     }
                 } else {
@@ -327,6 +348,24 @@ class ChatFragment : Fragment() {
 
     private fun showToast(message: String) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    }
+
+    // Function to add a new message to the chat
+    private fun addMessage(message: Message) {
+        recyclerViewMessages.add(message)
+        chatAdapter.notifyItemInserted(recyclerViewMessages.size - 1) // Notify the adapter of the new message
+    }
+
+    // Example of how to add a new message when a message is received (replace this with your actual logic)
+    private fun receiveMessage(messageText: String) {
+        val newMessage = Message("assistant", messageText)
+        addMessage(newMessage)
+    }
+
+    // Example of how to send a message (replace this with your actual logic)
+    private fun sendMessage(messageText: String) {
+        val newMessage = Message("user", messageText)
+        addMessage(newMessage)
     }
 
     companion object {
